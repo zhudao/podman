@@ -174,6 +174,10 @@ func ParseBuildOpts(cmd *cobra.Command, args []string, buildOpts *BuildFlagsWrap
 		return nil, errors.New(`"--stage-labels" requires "--save-stages"`)
 	}
 
+	if cmd.Flags().Changed("logsplit") && !cmd.Flags().Changed("logfile") {
+		return nil, errors.New("cannot use --logsplit without --logfile")
+	}
+
 	// Extract container files from the CLI (i.e., --file/-f) first.
 	var containerFiles []string
 	for _, f := range buildOpts.File {
@@ -544,6 +548,18 @@ func buildFlagsWrapperToOptions(c *cobra.Command, contextDir string, flags *Buil
 		cacheTTL, err = time.ParseDuration(flags.CacheTTL)
 		if err != nil {
 			return nil, fmt.Errorf("unable to parse value provided %q as --cache-ttl: %w", flags.CacheTTL, err)
+		}
+		// If user explicitly specified `--cache-ttl=0s`
+		// it would effectively mean that user is asking
+		// to use no cache at all. In such use cases
+		// buildah can skip looking for cache entirely
+		// by setting `--no-cache=true` internally.
+		if int64(cacheTTL) == 0 {
+			logrus.Debug("Setting --no-cache=true since --cache-ttl was set to 0s which effectively means user wants to ignore cache")
+			if c.Flag("no-cache").Changed && !flags.NoCache {
+				return nil, fmt.Errorf("cannot use --cache-ttl with duration as 0 and --no-cache=false")
+			}
+			flags.NoCache = true
 		}
 	}
 
