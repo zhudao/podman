@@ -19,7 +19,7 @@ Special cases:
 In both cases, the generated systemd service will contain a dependency on the service generated for the corresponding unit. Note: the corresponding `.volume` or `.image` file must exist.
 << endif >>
 
-Current supported mount TYPEs are **artifact**, **bind**, **devpts**, **glob**, **image**, **ramfs**, **tmpfs** and **volume**.
+Currently supported mount TYPEs are **artifact**, **bind**, **devpts**, **glob**, **image**, **ramfs**, **tmpfs** and **volume**.
 
 Options common to all mount types:
 
@@ -75,6 +75,12 @@ Options specific to type=**volume**:
 - *U*, *chown*: *true* or *false* (default if unspecified: *false*). Recursively change the owner and group of the source volume based on the UID and GID of the container.
 
 - *subpath*: Mount only a specific subpath within the volume, instead of the whole volume.
+
+- *volume-driver*: Name of the driver to use when creating a volume. If the named volume already exists,
+  it is reused when the driver is omitted or matches the existing volume's driver. Requesting a different
+  driver is an error.
+
+- *volume-opt*: Driver-specific option in `key=value` form. This option can be specified more than once and is passed to the driver only when creating the volume.
 
 - *relabel*: *shared*, *private*. Recursively walk the mount and set the security system (e.g. SELinux) label on each file to grant access permissions from the container context.
   *shared* applies a label that grants permissions to all containers, while *private* applies a label that grants permissions to this specific container.
@@ -181,3 +187,5 @@ Examples:
 - `type=volume,destination=/path/in/container`
 
 - `type=volume,src=test_vol,dst=/data,subpath=/code/docs`
+
+- `type=volume,src=test_vol,dst=/data,volume-driver=local,volume-opt=type=tmpfs,volume-opt=device=tmpfs`
